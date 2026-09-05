@@ -56,34 +56,34 @@ class GeminiHelper(LLMHelper):
 
     def summarize_question(self, title: str, content: str, char_budget: int = 4000) -> str:
         """
-        Ask Gemini to summarize a LeetCode question's full requirement in an
-        easy-to-understand way, in Vietnamese, as plain text within char_budget.
-        The content is raw HTML from LeetCode; Gemini is instructed to read it
-        and produce a clean plain-text summary.
+        Ask Gemini to faithfully TRANSLATE a LeetCode question into Vietnamese
+        (not summarize) as plain text within char_budget, preserving the full
+        meaning: problem description, input/output, constraints, and examples.
+        The content is raw HTML from LeetCode.
         """
         prompt = (
-            "Bạn là một mentor luyện phỏng vấn coding. Dưới đây là đề bài của một câu hỏi "
-            "LeetCode (nội dung ở dạng HTML). Hãy đọc và tóm tắt lại TOÀN BỘ yêu cầu của đề "
-            "một cách dễ hiểu bằng tiếng Việt, sao cho người đi phỏng vấn nắm được đầy đủ đề bài "
-            "mà không cần đọc bản gốc.\n\n"
+            "Bạn là một biên dịch viên kỹ thuật. Dưới đây là đề bài của một câu hỏi "
+            "LeetCode (nội dung ở dạng HTML). Hãy DỊCH toàn bộ đề bài sang tiếng Việt một cách "
+            "TRUNG THÀNH, KHÔNG tóm tắt, KHÔNG thêm bớt hay thay đổi ý nghĩa của đề bài.\n\n"
             f"Tên bài: {title}\n\n"
             f"Nội dung (HTML):\n{content}\n\n"
             "Yêu cầu về câu trả lời:\n"
-            "- Viết bằng tiếng Việt, văn phong đơn giản, rõ ràng.\n"
+            "- Dịch đầy đủ, giữ nguyên ý nghĩa gốc: mô tả bài toán, input, output, ràng buộc "
+            "(constraints), và tất cả các ví dụ (examples) kèm giải thích.\n"
+            "- Văn phong tiếng Việt rõ ràng, tự nhiên.\n"
             "- Giữ nguyên các thuật ngữ kỹ thuật tiếng Anh phổ biến (array, string, hash map, "
-            "linked list, binary tree, v.v.) nếu cần.\n"
-            "- Trình bày: mô tả bài toán, input, output, ràng buộc (constraints), và 1 ví dụ minh họa.\n"
+            "linked list, binary tree, v.v.) và giữ nguyên các ký hiệu, công thức, biến, giá trị.\n"
             "- CHỈ dùng plain text, TUYỆT ĐỐI không dùng markdown hay HTML.\n"
             f"- Giữ độ dài dưới {char_budget} ký tự."
         )
-        return self._generate(prompt, max_output_tokens=2000, temperature=0.3)
+        return self._generate(prompt, max_output_tokens=2000, temperature=0.2)
 
     def solve_question(self, title: str, content: str) -> dict:
         """
         Ask Gemini to solve a LeetCode question. Returns
         {"explanation": str, "code": str, "language": str} where:
           - explanation: Vietnamese plain text — how to identify the problem
-            type and the step-by-step approach to solve it.
+            type, the step-by-step approach, and the time/space complexity.
           - code: the solution as plain text.
           - language: the language of the solution, "Python" or "MySQL".
         The language is chosen by the model: Python by default, but MySQL if the
@@ -106,7 +106,9 @@ class GeminiHelper(LLMHelper):
             f"{lang_end}\n"
             f"{exp_start}\n"
             "<phần giải thích bằng tiếng Việt: (1) cách nhận diện dạng bài (problem type), "
-            "(2) các bước để giải bài toán. Dùng plain text, không markdown, không HTML. "
+            "(2) các bước để giải bài toán, (3) độ phức tạp về thời gian (time complexity) và "
+            "độ phức tạp về không gian (space complexity), kèm giải thích ngắn gọn tại sao. "
+            "Dùng plain text, không markdown, không HTML. "
             "Giữ nguyên thuật ngữ kỹ thuật tiếng Anh phổ biến (hash map, two pointers, JOIN, GROUP BY, v.v.).>\n"
             f"{exp_end}\n"
             f"{code_start}\n"
