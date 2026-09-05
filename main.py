@@ -127,7 +127,7 @@ def handle_message(chat_id: int, text: str):
 
 @app.route("/", methods=["GET"])
 def index():
-    return "OK", 200
+    return "OK!", 200
 
 
 @app.route("/webhook", methods=["POST"])
