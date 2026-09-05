@@ -81,32 +81,42 @@ class GeminiHelper(LLMHelper):
     def solve_question(self, title: str, content: str) -> dict:
         """
         Ask Gemini to solve a LeetCode question. Returns
-        {"explanation": str, "code": str} where:
+        {"explanation": str, "code": str, "language": str} where:
           - explanation: Vietnamese plain text — how to identify the problem
             type and the step-by-step approach to solve it.
-          - code: a Python solution as plain text.
-        The two parts are requested with explicit delimiters and split out.
+          - code: the solution as plain text.
+          - language: the language of the solution, "Python" or "MySQL".
+        The language is chosen by the model: Python by default, but MySQL if the
+        question is a database/SQL problem. The parts use explicit delimiters.
         """
         exp_start, exp_end = "===EXPLANATION_START===", "===EXPLANATION_END==="
         code_start, code_end = "===CODE_START===", "===CODE_END==="
+        lang_start, lang_end = "===LANGUAGE_START===", "===LANGUAGE_END==="
         prompt = (
             "Bạn là một mentor luyện phỏng vấn coding. Dưới đây là đề bài của một câu hỏi "
             "LeetCode (nội dung ở dạng HTML). Hãy giải bài này.\n\n"
             f"Tên bài: {title}\n\n"
             f"Nội dung (HTML):\n{content}\n\n"
+            "Chọn ngôn ngữ cho lời giải theo quy tắc: mặc định dùng Python; "
+            "nhưng nếu đề bài là bài toán về cơ sở dữ liệu / SQL (ví dụ yêu cầu viết một câu truy vấn "
+            "trên các bảng dữ liệu) thì dùng MySQL.\n\n"
             "Trả về CHÍNH XÁC theo định dạng sau (giữ nguyên các dòng phân cách):\n"
+            f"{lang_start}\n"
+            "<chỉ ghi 'Python' hoặc 'MySQL'>\n"
+            f"{lang_end}\n"
             f"{exp_start}\n"
             "<phần giải thích bằng tiếng Việt: (1) cách nhận diện dạng bài (problem type), "
             "(2) các bước để giải bài toán. Dùng plain text, không markdown, không HTML. "
-            "Giữ nguyên thuật ngữ kỹ thuật tiếng Anh phổ biến (hash map, two pointers, DP, v.v.).>\n"
+            "Giữ nguyên thuật ngữ kỹ thuật tiếng Anh phổ biến (hash map, two pointers, JOIN, GROUP BY, v.v.).>\n"
             f"{exp_end}\n"
             f"{code_start}\n"
-            "<code Python hoàn chỉnh để giải bài, chỉ code thuần, không giải thích, không markdown, "
-            "không dùng dấu ``` >\n"
+            "<code hoàn chỉnh bằng đúng ngôn ngữ đã chọn ở trên để giải bài, chỉ code thuần, "
+            "không giải thích, không markdown, không dùng dấu ``` >\n"
             f"{code_end}"
         )
         text = self._generate(prompt, max_output_tokens=3000, temperature=0.2)
 
+        language = self._extract(text, lang_start, lang_end)
         explanation = self._extract(text, exp_start, exp_end)
         code = self._extract(text, code_start, code_end)
 
@@ -114,9 +124,13 @@ class GeminiHelper(LLMHelper):
         code = re.sub(r"^```[a-zA-Z]*\n?", "", code)
         code = re.sub(r"\n?```$", "", code).strip()
 
+        # Normalize language to one of the two supported values, default Python.
+        language = "MySQL" if "sql" in language.lower() else "Python"
+
         return {
             "explanation": explanation or text.strip(),
             "code": code,
+            "language": language,
         }
 
     @staticmethod

@@ -117,11 +117,12 @@ def handle_message(chat_id: int, text: str):
 
     explanation = solution.get("explanation", "").strip()
     code = solution.get("code", "").strip()
+    language = solution.get("language", "Python")
 
     if explanation:
         send_spoiler(chat_id, "💡 Lời giải (chạm để xem):", explanation)
     if code:
-        send_spoiler(chat_id, "🐍 Python (chạm để xem):", code)
+        send_spoiler(chat_id, f"👨‍💻 {language} (chạm để xem):", code)
 
 
 @app.route("/", methods=["GET"])
